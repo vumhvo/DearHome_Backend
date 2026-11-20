@@ -1,6 +1,6 @@
 using System;
 using DearHome_Backend.Data;
-using DearHome_Backend.Modals;
+using DearHome_Backend.Models;
 using DearHome_Backend.Repositories.Interfaces;
 
 namespace DearHome_Backend.Repositories.Implementations;

@@ -1,7 +1,8 @@
 using System;
 using DearHome_Backend.DTOs.ProductDtos;
+using DearHome_Backend.DTOs.VariantAttributeDtos;
 
-namespace DearHome_Backend.DTOs.VariantAttributeDtos;
+namespace DearHome_Backend.DTOs.VariantDtos;
 
 public class VariantDto
 {
@@ -13,6 +14,8 @@ public class VariantDto
     public bool IsActive { get; set; } = true; 
     public required string Sku { get; set; }
     public Guid ProductId { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
     public virtual ProductDto? Product { get; set; }
     public virtual ICollection<VariantAttributeDto>? VariantAttributes { get; set; } = new List<VariantAttributeDto>();
 }

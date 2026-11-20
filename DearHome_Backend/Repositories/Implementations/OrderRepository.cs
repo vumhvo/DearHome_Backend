@@ -36,6 +36,7 @@ public class OrderRepository : BaseRepository<Order>, IOrderRepository
 
     public override async Task<PaginatedResult<Order>> GetAllAsync(int offSet, int limit, string? search = null)
     {
+        (offSet, limit) = NormalizePaging(offSet, limit);
         IQueryable<Order> query = _context.Orders;
 
         if (!string.IsNullOrEmpty(search))
@@ -62,6 +63,7 @@ public class OrderRepository : BaseRepository<Order>, IOrderRepository
 
     public override async Task<PaginatedResult<Order>> GetAllAsync(int offSet, int limit, string? search = null, string? filter = null, string? sortBy = null, bool isDescending = false)
     {
+        (offSet, limit) = NormalizePaging(offSet, limit);
         IQueryable<Order> query = _context.Orders;
 
         if (!string.IsNullOrEmpty(search))

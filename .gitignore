@@ -18,6 +18,7 @@ publish/
 
 # ASP.NET
 appsettings*.json
+!appsettings.example.json
 Credentials/*
 
 # Rider
@@ -51,7 +52,7 @@ _ReSharper*/
 local.settings.json
 
 # Entity Framework
-Migrations/
+# Migrations (DearHome_Backend/Data/Migrations) are committed on purpose.
 
 # Coverage Reports
 coverage/

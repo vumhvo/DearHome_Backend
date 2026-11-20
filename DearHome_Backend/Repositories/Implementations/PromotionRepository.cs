@@ -20,6 +20,7 @@ public class PromotionRepository : BaseRepository<Promotion>, IPromotionReposito
 
     public override async Task<PaginatedResult<Promotion>> GetAllAsync(int offSet, int limit, string? search)
     {
+        (offSet, limit) = NormalizePaging(offSet, limit);
         var query = _context.Promotions.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -42,6 +43,7 @@ public class PromotionRepository : BaseRepository<Promotion>, IPromotionReposito
 
     public override async Task<PaginatedResult<Promotion>> GetAllAsync(int offSet, int limit, string? search = null, string? filter = null, string? sortBy = null, bool isDescending = false)
     {
+        (offSet, limit) = NormalizePaging(offSet, limit);
         var query = _context.Promotions.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -62,7 +64,8 @@ public class PromotionRepository : BaseRepository<Promotion>, IPromotionReposito
 
         if (!string.IsNullOrWhiteSpace(sortBy))
         {
-            query = isDescending ? query.OrderByDescending(p => EF.Property<object>(p, sortBy)) : query.OrderBy(p => EF.Property<object>(p, sortBy));
+            // Only mapped Promotion properties are accepted; unknown names leave the order unchanged.
+            query = ApplySorting(query, sortBy, isDescending);
         }
 
         return new PaginatedResult<Promotion>

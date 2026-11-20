@@ -1,6 +1,6 @@
 using System;
 
-namespace DearHome_Backend.Models.OrderDetailDtos;
+namespace DearHome_Backend.DTOs.OrderDetailDtos;
 
 public class AddOrderDetailDto
 {

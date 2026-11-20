@@ -1,6 +1,7 @@
 using System;
+using DearHome_Backend.DTOs.CategoryAttributeDtos;
 
-namespace DearHome_Backend.DTOs.CategoryAttributeDtos;
+namespace DearHome_Backend.DTOs.CategoryDtos;
 
 public class UpdateCategoryDto
 {

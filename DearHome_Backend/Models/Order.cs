@@ -1,6 +1,5 @@
 using System;
 using DearHome_Backend.Constants;
-using DearHome_Backend.Modals;
 
 namespace DearHome_Backend.Models;
 

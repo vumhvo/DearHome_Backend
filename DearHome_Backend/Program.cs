@@ -32,10 +32,17 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContextFactory<DearHomeContext>(options =>
+{
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
-           .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning))
-           .EnableSensitiveDataLogging()
-           .LogTo(Console.WriteLine, LogLevel.Information),
+           .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+
+    // SQL/parameter logging only in Development: it can expose user data.
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging()
+               .LogTo(Console.WriteLine, LogLevel.Information);
+    }
+},
     ServiceLifetime.Scoped);
 
 builder.Services.AddIdentity<User, IdentityRole<Guid>>() // Use IdentityRole<Guid>
@@ -44,6 +51,7 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>() // Use IdentityRole<Gui
 
 ServiceExtensions.AddScopedServices(builder.Services);
 ServiceExtensions.AddScopedRepositories(builder.Services);
+ServiceExtensions.AddApplicationOptions(builder.Services, builder.Configuration);
 ServiceExtensions.AddHttpClients(builder.Services, builder.Configuration);
 
 builder.Services.AddApplicationInsightsTelemetry(options =>
@@ -89,15 +97,37 @@ builder.Services.ConfigureTelemetryModule<DependencyTrackingTelemetryModule>((mo
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
+// CORS: allowed origins come from Cors:AllowedOrigins. If none are configured, fall back to
+// allowing any origin so existing deployments keep working (a warning is logged at startup).
+const string CorsPolicyName = "DefaultCorsPolicy";
+var corsAllowedOrigins = (builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
+    .Where(origin => !string.IsNullOrWhiteSpace(origin))
+    .Select(origin => origin.Trim().TrimEnd('/'))
+    .ToArray();
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
-        builder => builder.AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader());
+    options.AddPolicy(CorsPolicyName, policy =>
+    {
+        if (corsAllowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(corsAllowedOrigins);
+        }
+        else
+        {
+            policy.AllowAnyOrigin();
+        }
+
+        policy.AllowAnyMethod()
+              .AllowAnyHeader();
+    });
 });
 
-var firebaseCredentialPath = "Credentials/makemyhome-27df4-firebase-adminsdk-hsal7-09e697d0ff.json";
+var firebaseCredentialPath = builder.Configuration["Firebase:CredentialPath"];
+if (string.IsNullOrWhiteSpace(firebaseCredentialPath))
+{
+    firebaseCredentialPath = "Credentials/makemyhome-27df4-firebase-adminsdk-hsal7-09e697d0ff.json";
+}
 
 if (FirebaseApp.DefaultInstance == null)
 {
@@ -135,22 +165,27 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+if (corsAllowedOrigins.Length == 0)
+{
+    app.Logger.LogWarning("Cors:AllowedOrigins is not configured; CORS allows any origin. Configure the allowed frontend origins for production.");
+}
+
 try
 {
     using (var connection = new SqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")))
     {
         connection.Open();
-        Console.WriteLine("Database connection successful!");
+        app.Logger.LogInformation("Database connection successful.");
     }
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"Database connection failed: {ex.Message}");
+    app.Logger.LogError(ex, "Database connection failed: {Message}", ex.Message);
 }
 
-app.UseMiddleware<ErrorHandlerMiddleware.GlobalErrorHandlerMiddleware>();
+app.UseMiddleware<ErrorHandlerMiddleware>();
 
-app.UseCors("AllowAll");
+app.UseCors(CorsPolicyName);
 
 app.UseHttpsRedirection();
 app.UseAuthentication();

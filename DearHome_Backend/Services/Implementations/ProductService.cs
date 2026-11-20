@@ -1,8 +1,8 @@
 using System;
 using DearHome_Backend.Models;
 using DearHome_Backend.Repositories.Interfaces;
-using DearHome_Backend.Services.Inplementations;
 using DearHome_Backend.Services.Interfaces;
+using DearHome_Backend.Exceptions;
 
 namespace DearHome_Backend.Services.Implementations;
 
@@ -37,7 +37,7 @@ public class ProductService : BaseService<Product>, IProductService
         var product = await _productRepository.GetByIdWithAttributeValuesAndVariantsAsync(id);
         if (product == null)
         {
-            throw new KeyNotFoundException($"Product with ID {id} was not found.");
+            throw new NotFoundException($"Product with ID {id} was not found.");
         }
         return product;
     }
@@ -117,7 +117,7 @@ public class ProductService : BaseService<Product>, IProductService
         var product = await _productRepository.GetByIdAsync(id);
         if (product == null)
         {
-            throw new KeyNotFoundException($"Product with ID {id} was not found.");
+            throw new NotFoundException($"Product with ID {id} was not found.");
         }
 
         await base.DeleteAsync(id);

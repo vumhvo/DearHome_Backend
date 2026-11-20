@@ -17,6 +17,9 @@ public class PromotionDto
     public string? Description { get; set; }
     public CustomerLevels CustomerLevel { get; set; } // 0: Bronze, 1: Silver, 2: Gold, 3: Platinum
     public int Usage { get; set; } // Usage limit for the promotion
+    public ICollection<Guid>? ProductIds { get; set; } // Product IDs this promotion applies to
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
     public virtual ICollection<ProductDto>? Products { get; set; } // List of products that this promotion applies to
     public virtual ICollection<OrderDto>? Orders { get; set; } // Orders that used t
 }

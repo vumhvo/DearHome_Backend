@@ -2,11 +2,14 @@ using DearHome_Backend.DTOs.ShippingDtos;
 using DearHome_Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using DearHome_Backend.Constants;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DearHome_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ShippingController : ControllerBase
     {
         private readonly IShippingService _shippingService;
@@ -16,6 +19,7 @@ namespace DearHome_Backend.Controllers
             _shippingService = shippingService ?? throw new ArgumentNullException(nameof(shippingService));
         }
 
+        [Authorize(Roles = nameof(UserRole.Admin))]
         [HttpGet("validate-token")]
         public async Task<IActionResult> ValidateToken()
         {
@@ -38,6 +42,7 @@ namespace DearHome_Backend.Controllers
             return Ok(cost);
         }
 
+        [AllowAnonymous]
         [HttpGet("get-cities")]
         public async Task<IActionResult> GetCities()
         {
@@ -45,6 +50,7 @@ namespace DearHome_Backend.Controllers
             return Ok(cities);
         }
 
+        [AllowAnonymous]
         [HttpGet("get-districts/{cityId}")]
         public async Task<IActionResult> GetDistrictsByCityId(string cityId)
         {
@@ -52,6 +58,7 @@ namespace DearHome_Backend.Controllers
             return Ok(districts);
         }
 
+        [AllowAnonymous]
         [HttpGet("get-wards/{districtId}")]        
         public async Task<IActionResult> GetWardsByDistrictId(string districtId)
         {
@@ -66,6 +73,7 @@ namespace DearHome_Backend.Controllers
             return Ok(formatedAddress);
         }
 
+        [AllowAnonymous]
         [HttpGet("get-citys-by-code/{code}")]
         public async Task<IActionResult> GetCitiesByCode(string code)
         {

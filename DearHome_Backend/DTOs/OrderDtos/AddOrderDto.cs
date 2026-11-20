@@ -1,6 +1,6 @@
 using System;
 using DearHome_Backend.Constants;
-using DearHome_Backend.Models.OrderDetailDtos;
+using DearHome_Backend.DTOs.OrderDetailDtos;
 
 namespace DearHome_Backend.DTOs.OrderDtos;
 

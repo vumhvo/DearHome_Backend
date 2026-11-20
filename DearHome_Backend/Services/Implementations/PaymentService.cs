@@ -2,10 +2,9 @@ using System;
 using System.Threading.Tasks;
 using DearHome_Backend.Models;
 using DearHome_Backend.Services.Interfaces;
-using Microsoft.Extensions.Configuration;
+using DearHome_Backend.Services.External;
 using Microsoft.Extensions.Logging;
 using Microsoft.ApplicationInsights;
-using Net.payOS;
 using Net.payOS.Types;
 using System.Collections.Generic;
 using DearHome_Backend.DTOs.PaymentDto;
@@ -16,39 +15,21 @@ namespace DearHome_Backend.Services.Implementations;
 
 public class PaymentService : IPaymentService
 {
-    private readonly PayOS _payOS;
+    private readonly IPayOSClient _payOSClient;
     private readonly IOrderRepository _orderRepository;
-    private readonly IConfiguration _configuration;
     private readonly ILogger<PaymentService> _logger;
     private readonly TelemetryClient _telemetryClient;
-    private readonly HttpClient _httpClient;
 
     public PaymentService(
-        IConfiguration configuration,
+        IPayOSClient payOSClient,
         ILogger<PaymentService> logger,
         TelemetryClient telemetryClient,
-        HttpClient httpClient,
         IOrderRepository orderRepository)
     {
-        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        _payOSClient = payOSClient ?? throw new ArgumentNullException(nameof(payOSClient));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _telemetryClient = telemetryClient ?? throw new ArgumentNullException(nameof(telemetryClient));
-        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _orderRepository = orderRepository ?? throw new ArgumentNullException(nameof(orderRepository));
-
-        // Initialize PayOS with secure configuration management
-        string clientId = _configuration["PayOS:PAYOS_CLIENT_ID"]!;
-        string apiKey = _configuration["PayOS:PAYOS_API_KEY"]!;
-        string checksumKey = _configuration["PayOS:PAYOS_CHECKSUM_KEY"]!;
-
-        if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(checksumKey))
-        {
-            _logger.LogError("PayOS configuration is incomplete. Please check your configuration settings.");
-            throw new InvalidOperationException("PayOS configuration is incomplete.");
-        }
-
-        _payOS = new PayOS(clientId, apiKey, checksumKey);
-        _logger.LogInformation("PayOS service initialized successfully");
     }
 
     public async Task<PaymentLinkInformation> CancelPaymentLinkAsync(long orderId)
@@ -57,7 +38,7 @@ public class PaymentService : IPaymentService
         try
         {
             _logger.LogInformation("Cancelling payment link for order ID: {orderId}", orderId);
-            var response = await _payOS.cancelPaymentLink(orderId);
+            var response = await _payOSClient.CancelPaymentLinkAsync(orderId);
             return response;
         }
         catch (Exception ex)
@@ -106,7 +87,7 @@ public class PaymentService : IPaymentService
             );
 
             // Create payment link
-            var response = await _payOS.createPaymentLink(paymentData);
+            var response = await _payOSClient.CreatePaymentLinkAsync(paymentData);
             
             // Log success and payment details
             _logger.LogInformation("Payment link created successfully for order {OrderId}, checkout URL: {CheckoutUrl}", 
@@ -142,7 +123,7 @@ public class PaymentService : IPaymentService
         {
             _logger.LogInformation("Checking payment status for order ID: {orderId}", orderId);
             
-            var paymentData = await _payOS.getPaymentLinkInformation(orderId);
+            var paymentData = await _payOSClient.GetPaymentLinkInformationAsync(orderId);
             
             _logger.LogInformation("Payment status for {PaymentLinkId}: {Status}", 
                 orderId, paymentData.status);
@@ -176,7 +157,7 @@ public class PaymentService : IPaymentService
     {
         try
         {
-            var webhookData = _payOS.verifyPaymentWebhookData(body);
+            var webhookData = _payOSClient.VerifyPaymentWebhookData(body);
             return webhookData != null;
         }
         catch (Exception ex)

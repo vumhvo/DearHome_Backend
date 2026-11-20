@@ -5,7 +5,7 @@ using DearHome_Backend.Models;
 using DearHome_Backend.Repositories.Interfaces;
 using DearHome_Backend.Services.Interfaces;
 
-namespace DearHome_Backend.Services;
+namespace DearHome_Backend.Services.Implementations;
 
 public class StatisticService : IStatisticService
 {

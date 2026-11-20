@@ -4,6 +4,7 @@ using DearHome_Backend.DTOs.StatsDtos;
 using DearHome_Backend.Models;
 using DearHome_Backend.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using DearHome_Backend.Exceptions;
 
 namespace DearHome_Backend.Repositories.Implementations;
 
@@ -24,7 +25,7 @@ public class CategoryRepository : BaseRepository<Category>, ICategoryRepository
             var category = task.Result;
             if (category == null)
             {
-                throw new InvalidOperationException($"Category with name '{name}' not found.");
+                throw new NotFoundException($"Category with name '{name}' not found.");
             }
             return category;
         });
@@ -65,7 +66,7 @@ public class CategoryRepository : BaseRepository<Category>, ICategoryRepository
 
         if (category == null)
         {
-            throw new InvalidOperationException($"Category with slug '{slug}' not found.");
+            throw new NotFoundException($"Category with slug '{slug}' not found.");
         }
 
         return category;
@@ -112,6 +113,6 @@ public class CategoryRepository : BaseRepository<Category>, ICategoryRepository
     return await _context.Categories
             .Where(c => c.Id == id)
             .Select(c => c.Name)
-            .FirstOrDefaultAsync() ?? throw new InvalidOperationException($"Category with ID '{id}' not found.");
+            .FirstOrDefaultAsync() ?? throw new NotFoundException($"Category with ID '{id}' not found.");
     }
 }

@@ -61,13 +61,15 @@ DearHome_Backend/
 ├── Constants/       # Enum: trạng thái đơn, vai trò, hạng khách hàng, chủ đề NATS…
 ├── Controllers/     # API endpoint (route: api/[controller])
 ├── DTOs/            # Đối tượng request/response
-├── Data/            # DearHomeContext và cấu hình Fluent API cho từng entity
+├── Data/            # DearHomeContext, cấu hình Fluent API cho từng entity, Migrations/ của EF Core
 ├── Helpers/         # AutoMapper profile, đăng ký DI (ServiceExtensions)
 ├── Middlewares/     # Xử lý lỗi tập trung
 ├── Models/          # Entity EF Core
 ├── Repositories/    # Interfaces + Implementations truy cập dữ liệu
 ├── Services/        # Interfaces + Implementations nghiệp vụ
 └── Program.cs       # Khởi tạo ứng dụng
+tests/
+└── DearHome_Backend.Tests/  # Unit test xUnit (không cần DB hay mạng)
 ```
 
 ## Bắt đầu
@@ -91,7 +93,7 @@ docker run -d --name nats -p 4222:4222 nats:latest
 
 ### Cấu hình
 
-`appsettings*.json` đã bị bỏ qua trong `.gitignore`, nên bạn cần tự tạo `DearHome_Backend/appsettings.Development.json`:
+`appsettings*.json` đã bị bỏ qua trong `.gitignore` (trừ [`appsettings.example.json`](DearHome_Backend/appsettings.example.json) — mẫu đầy đủ mọi khoá cấu hình), nên bạn cần tự tạo `DearHome_Backend/appsettings.Development.json`, ví dụ bằng cách sao chép file mẫu:
 
 ```jsonc
 {
@@ -142,19 +144,57 @@ docker run -d --name nats -p 4222:4222 nats:latest
 
 Lưu ý:
 
-- **Firebase service account**: đặt file JSON vào thư mục `DearHome_Backend/Credentials/`. Tên file đang được khai báo cứng trong [`Program.cs`](DearHome_Backend/Program.cs) (biến `firebaseCredentialPath`), hãy sửa cho khớp với file của bạn.
+- **Firebase service account**: đặt file JSON vào thư mục `DearHome_Backend/Credentials/` và khai báo đường dẫn ở `Firebase:CredentialPath` (nếu bỏ trống sẽ dùng đường dẫn mặc định trong [`Program.cs`](DearHome_Backend/Program.cs)).
 - **JWT**: `Jwt:Key`, `Jwt:Issuer`, `Jwt:Audience` phải **trùng** với `JWT_SECRET_KEY`, `JWT_ISSUER`, `JWT_AUDIENCE` của AI Backend, vì AI Backend xác thực cùng token này.
-- **NATS**: thông tin kết nối lấy từ giá trị mặc định trong [`Config/NatsConfig.cs`](DearHome_Backend/Config/NatsConfig.cs) (`nats://0.0.0.0:4222`).
+- **NATS**: cấu hình ở mục `Nats` (`Url`, `Username`, `Password`, `ConnectionTimeout`); mặc định `nats://localhost:4222`, không có tài khoản.
+- **CORS**: khai báo các origin của frontend ở `Cors:AllowedOrigins`. Nếu để trống, API cho phép mọi origin và ghi cảnh báo khi khởi động.
+- **Phân quyền**: các API quản trị yêu cầu JWT có role `Admin`; các API của khách hàng (đặt hàng, hồ sơ, đánh giá…) yêu cầu đăng nhập.
 
 ### Tạo cơ sở dữ liệu
 
-Repo chưa có sẵn thư mục migration, hãy tạo migration lần đầu rồi áp dụng:
+Migration EF Core nằm trong [`DearHome_Backend/Data/Migrations`](DearHome_Backend/Data/Migrations). Migration đầu tiên là **`20261120171646_InitialCreate`** (EF Core `9.0.3`): tạo các bảng ASP.NET Core Identity (khoá `Guid`), toàn bộ bảng nghiệp vụ và dữ liệu mẫu gồm role `Admin`/`User` và tài khoản quản trị `admin` / `Admin@123` (hãy đổi mật khẩu ngay sau lần đăng nhập đầu).
+
+`dotnet-ef` đã được khai báo trong tool manifest [`.config/dotnet-tools.json`](.config/dotnet-tools.json), nên không cần cài global. Các lệnh `dotnet ef` dùng [`DesignTimeDbContextFactory`](DearHome_Backend/Data/DesignTimeDbContextFactory.cs) chứ không chạy `Program.cs` (không cần `Jwt:Key` hay file Firebase). Chuỗi kết nối được lấy theo thứ tự: biến môi trường `ConnectionStrings__DefaultConnection` → `ConnectionStrings:DefaultConnection` trong `appsettings.Development.json` / `appsettings.json` → chuỗi `localhost` mặc định (đủ cho `migrations add` / `migrations script`, vì hai lệnh này không kết nối DB).
+
+**Cơ sở dữ liệu mới** – áp dụng toàn bộ migration:
 
 ```bash
-dotnet tool install --global dotnet-ef
-cd DearHome_Backend
-dotnet ef migrations add InitialCreate
-dotnet ef database update
+dotnet tool restore
+export ConnectionStrings__DefaultConnection="Server=localhost,1433;Database=INTERIOR_SHOPPING;User Id=sa;Password=<mật-khẩu>;TrustServerCertificate=True"
+dotnet ef database update --project DearHome_Backend
+```
+
+(PowerShell: `$env:ConnectionStrings__DefaultConnection="..."`; nếu đã có `appsettings.Development.json` thì bỏ qua bước `export`.)
+
+**Cơ sở dữ liệu đã triển khai trước đây (baseline)** – các DB đang chạy được tạo khi repo chưa có migration nên đã có sẵn bảng và tài khoản admin. **Không** chạy `dotnet ef database update` trực tiếp trên các DB này (`InitialCreate` sẽ lỗi vì bảng đã tồn tại). Thay vào đó, sao lưu DB rồi đánh dấu `InitialCreate` là đã áp dụng:
+
+```sql
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+BEGIN
+    CREATE TABLE [__EFMigrationsHistory] (
+        [MigrationId] nvarchar(150) NOT NULL,
+        [ProductVersion] nvarchar(32) NOT NULL,
+        CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
+    );
+END;
+
+IF NOT EXISTS (SELECT 1 FROM [__EFMigrationsHistory] WHERE [MigrationId] = N'20261120171646_InitialCreate')
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20261120171646_InitialCreate', N'9.0.3');
+END;
+```
+
+Lưu ý khi baseline:
+
+- Nên so sánh schema thật với script `dotnet ef migrations script --idempotent -o migrate.sql --project DearHome_Backend` (hoặc dùng công cụ Schema Compare) trước khi baseline; nếu DB lệch so với model (thiếu cột, khác kiểu…), cần sửa DB cho khớp trước.
+- Nếu bảng `__EFMigrationsHistory` đã có dòng của các migration cũ tạo ở máy local, có thể giữ nguyên: EF bỏ qua những migration không có trong mã nguồn.
+- Sau khi baseline, các migration về sau được áp dụng bình thường bằng `dotnet ef database update`, hoặc sinh script cho môi trường Production bằng `dotnet ef migrations script --idempotent`.
+
+Thêm migration mới khi thay đổi model:
+
+```bash
+dotnet ef migrations add <TênMigration> --project DearHome_Backend --output-dir Data/Migrations
 ```
 
 ### Chạy
@@ -166,6 +206,14 @@ dotnet run --launch-profile http
 ```
 
 API chạy tại `http://localhost:5226` (profile `https`: `https://localhost:7042`). Ở môi trường Development, **Swagger UI** mở ngay tại trang gốc `http://localhost:5226/`.
+
+### Kiểm thử
+
+```bash
+dotnet test
+```
+
+Bộ test xUnit trong [`tests/DearHome_Backend.Tests`](tests/DearHome_Backend.Tests) chạy hoàn toàn trong bộ nhớ (EF Core InMemory, `HttpMessageHandler` giả), không cần SQL Server, NATS hay mạng. GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) chạy restore, build `Release` và test cho mỗi push/pull request vào `main` và `refactor/**`.
 
 ## Danh sách API
 

@@ -2,11 +2,14 @@ using DearHome_Backend.Services.Interfaces;
 using Google.Apis.Util;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using DearHome_Backend.Constants;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DearHome_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class FirebaseStorageController : ControllerBase
     {
         private readonly IFirebaseStorageService _firebaseStorageService;
@@ -28,6 +31,7 @@ namespace DearHome_Backend.Controllers
             return Ok(result);
         }
 
+        [Authorize(Roles = nameof(UserRole.Admin))]
         [HttpPut("update-image")]
         public async Task<IActionResult> UpdateFile(IFormFile file,[FromQuery] string imageUrl)
         {
@@ -40,6 +44,7 @@ namespace DearHome_Backend.Controllers
             return Ok(result);
         }
 
+        [Authorize(Roles = nameof(UserRole.Admin))]
         [HttpDelete("delete-image")]
         public async Task<IActionResult> DeleteFile([FromQuery] string imageUrl)
         {

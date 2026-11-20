@@ -25,6 +25,7 @@ public class ProductRepository : BaseRepository<Product>, IProductRepository
 
     public override async Task<PaginatedResult<Product>> GetAllAsync(int offSet, int limit, string? search = null)
     {
+        (offSet, limit) = NormalizePaging(offSet, limit);
         var query = _context.Products.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -48,6 +49,7 @@ public class ProductRepository : BaseRepository<Product>, IProductRepository
 
     public override async Task<PaginatedResult<Product>> GetAllAsync(int offSet, int limit, string? search = null, string? filter = null, string? sortBy = null, bool isDescending = false)
     {
+        (offSet, limit) = NormalizePaging(offSet, limit);
         var query = _context.Products.AsQueryable();
 
         query = query
@@ -77,7 +79,7 @@ public class ProductRepository : BaseRepository<Product>, IProductRepository
                 "price" => isDescending ? query.OrderByDescending(p => p.Price) : query.OrderBy(p => p.Price),
                 "createdAt" => isDescending ? query.OrderByDescending(p => p.CreatedAt) : query.OrderBy(p => p.CreatedAt),
                 "updatedAt" => isDescending ? query.OrderByDescending(p => p.UpdatedAt) : query.OrderBy(p => p.UpdatedAt),
-                "category" => isDescending ? query.OrderByDescending(p => p.Category.Name) : query.OrderBy(p => p.Category.Name),
+                "category" => isDescending ? query.OrderByDescending(p => p.Category!.Name) : query.OrderBy(p => p.Category!.Name),
                 _ => query
             };
         }

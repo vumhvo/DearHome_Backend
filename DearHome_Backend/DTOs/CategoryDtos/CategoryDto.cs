@@ -11,6 +11,8 @@ public class CategoryDto
     public string? Description { get; set; }
     public string? ImageUrl { get; set; }
     public Guid? ParentCategoryId { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
     public virtual ICollection<CategoryDto>? SubCategories { get; set; } = new List<CategoryDto>();
     public virtual ICollection<CategoryAttributeDto>? CategoryAttributes { get; set; } = new List<CategoryAttributeDto>();
 }

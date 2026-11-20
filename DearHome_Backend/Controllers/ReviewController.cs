@@ -5,11 +5,14 @@ using DearHome_Backend.Models;
 using DearHome_Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using DearHome_Backend.Constants;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DearHome_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ReviewController : ControllerBase
     {
         private readonly IReviewService _reviewService;
@@ -21,6 +24,7 @@ namespace DearHome_Backend.Controllers
             _mapper = mapper;
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -29,6 +33,7 @@ namespace DearHome_Backend.Controllers
             return Ok(reviewDtos);
         }
 
+        [AllowAnonymous]
         [HttpGet("order/{orderId}")]
         public async Task<IActionResult> GetByOrderId(Guid orderId)
         {
@@ -41,6 +46,7 @@ namespace DearHome_Backend.Controllers
             return Ok(reviewDtos);
         }
 
+        [AllowAnonymous]
         [HttpGet("product/{productId}")]
         public async Task<IActionResult> GetByProductId(Guid productId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? sortBy = null, [FromQuery] bool isDescending = false)
         {
@@ -49,6 +55,7 @@ namespace DearHome_Backend.Controllers
             return Ok(paginatedReviews);
         }
 
+        [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -77,6 +84,7 @@ namespace DearHome_Backend.Controllers
             return NoContent();
         }
 
+        [Authorize(Roles = nameof(UserRole.Admin))]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {

@@ -1,7 +1,7 @@
 using System;
 using DearHome_Backend.DTOs.OrderDtos;
 using DearHome_Backend.DTOs.UserDtos;
-using DearHome_Backend.DTOs.VariantAttributeDtos;
+using DearHome_Backend.DTOs.VariantDtos;
 
 namespace DearHome_Backend.DTOs.ReviewDtos;
 

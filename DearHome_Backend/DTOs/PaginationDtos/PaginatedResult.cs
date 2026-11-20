@@ -31,4 +31,21 @@ public class PaginatedResult<T>
         TotalPages = 0;
         TotalRecords = 0;
     }
+
+    /// <summary>
+    /// Projects the page items (e.g. entities to DTOs) while keeping the paging metadata unchanged.
+    /// </summary>
+    public PaginatedResult<TResult> MapData<TResult>(Func<List<T>, List<TResult>> map)
+    {
+        ArgumentNullException.ThrowIfNull(map);
+
+        return new PaginatedResult<TResult>
+        {
+            Data = Data is null ? default! : map(Data),
+            PageNumber = PageNumber,
+            PageSize = PageSize,
+            TotalPages = TotalPages,
+            TotalRecords = TotalRecords
+        };
+    }
 }
