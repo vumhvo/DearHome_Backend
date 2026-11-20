@@ -8,11 +8,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using DearHome_Backend.Constants;
 
 namespace DearHome_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -26,6 +28,7 @@ namespace DearHome_Backend.Controllers
             _userManager = userManager;
         }
 
+        [Authorize(Roles = nameof(UserRole.Admin))]
         [HttpGet("all-customers")]
         public async Task<IActionResult> GetAllCustomers([FromQuery] int offSet, [FromQuery] int limit)
         {
@@ -64,6 +67,7 @@ namespace DearHome_Backend.Controllers
             return Ok(user);
         }
 
+        [AllowAnonymous]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] UserLoginDto userLoginDto)
         {
@@ -71,6 +75,7 @@ namespace DearHome_Backend.Controllers
             return Ok(token);
         }
 
+        [AllowAnonymous]
         [HttpPost("login-google")]
         public async Task<IActionResult> LoginWithGoogle([FromBody] GoogleLoginDto googleLoginDto)
         {
@@ -85,6 +90,7 @@ namespace DearHome_Backend.Controllers
             return Ok(token);
         }
 
+        [AllowAnonymous]
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] UserRegisterDto userRegisterDto)
         {
@@ -105,6 +111,7 @@ namespace DearHome_Backend.Controllers
             return Ok("User logged out successfully.");
         }
 
+        [AllowAnonymous]
         [HttpPost("send-verification-code")]
         public async Task<IActionResult> SendVerificationCode([FromBody] VerificationCodeDto verificationCodeDto)
         {

@@ -218,16 +218,20 @@ public class UserService : IUserService
         var jwtIssuer = _configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT issuer is not configured.");
         var jwtAudience = _configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT audience is not configured.");
         var key = Encoding.ASCII.GetBytes(jwtKey);
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
+            new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
+        };
+        // One role claim per role so [Authorize(Roles = "...")] works.
+        // A single role still serializes as a plain string ("role": "Admin").
+        claims.AddRange(_userManager.GetRolesAsync(user).Result.Select(role => new Claim(ClaimTypes.Role, role)));
+        claims.Add(new Claim("imageUrl", user.ImageUrl ?? string.Empty));
+
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(
-            [
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
-                new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-                new Claim(ClaimTypes.Role, string.Join(",", _userManager.GetRolesAsync(user).Result)),
-                new Claim("imageUrl", user.ImageUrl ?? string.Empty),
-            ]),
+            Subject = new ClaimsIdentity(claims),
             Issuer = jwtIssuer,
             Audience = jwtAudience,
             Expires = DateTime.UtcNow.AddHours(10),

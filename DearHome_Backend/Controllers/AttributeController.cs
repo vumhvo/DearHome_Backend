@@ -3,11 +3,14 @@ using DearHome_Backend.DTOs.AttributeDtos;
 using DearHome_Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using DearHome_Backend.Constants;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DearHome_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public class AttributeController : ControllerBase
     {   
         private readonly IAttributeService _attributeService;
@@ -19,6 +22,7 @@ namespace DearHome_Backend.Controllers
             _attributeService = attributeService;
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAllAttributes()
         {
@@ -28,6 +32,7 @@ namespace DearHome_Backend.Controllers
             return Ok(attributeDtos);
         }
 
+        [AllowAnonymous]
         [HttpGet("with-category-attributes")]
         public async Task<IActionResult> GetAllAttributesWithCategoryAttributes()
         {
@@ -37,6 +42,7 @@ namespace DearHome_Backend.Controllers
             return Ok(attributeDtos);
         }
 
+        [AllowAnonymous]
         [HttpGet("with-attribute-values")]
         public async Task<IActionResult> GetAllAttributesWithAttributeValues()
         {
@@ -46,6 +52,7 @@ namespace DearHome_Backend.Controllers
             return Ok(attributeDtos);
         }
 
+        [AllowAnonymous]
         [HttpGet("with-attribute-values-by-category/{categoryId}")]
         public async Task<IActionResult> GetAttributesWithAttributeValuesByCategoryId(Guid categoryId)
         {

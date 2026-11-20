@@ -5,11 +5,13 @@ using DearHome_Backend.Models;
 using DearHome_Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DearHome_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class OrderController : ControllerBase
     {
         private readonly IOrderService _orderService;
@@ -24,6 +26,7 @@ namespace DearHome_Backend.Controllers
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
+        [Authorize(Roles = nameof(UserRole.Admin))]
         [HttpGet] 
         public async Task<IActionResult> GetAllOrders([FromQuery] int offSet = 0, [FromQuery] int limit = 10, [FromQuery] string? searchString = null, [FromQuery] string? filter = null, [FromQuery] string? sortBy = null, [FromQuery] bool isDescending = false)
         {
@@ -66,6 +69,13 @@ namespace DearHome_Backend.Controllers
         [HttpPut("update-status/{id}")]
         public async Task<IActionResult> UpdateOrderStatus(Guid id, [FromBody] OrderStatus status)
         {
+            // Admins may set any status. Customers use this endpoint only to confirm receipt
+            // (OrderTracking "Complete order"), so non-admins are limited to Completed.
+            if (!User.IsInRole(nameof(UserRole.Admin)) && status != OrderStatus.Completed)
+            {
+                return Forbid();
+            }
+
             await _orderService.UpdateOrderStatusAsync(id, status);
             return Ok("Order status updated successfully.");
         }

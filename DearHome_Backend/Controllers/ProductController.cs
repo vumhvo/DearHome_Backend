@@ -7,11 +7,14 @@ using DearHome_Backend.Services.Implementations;
 using DearHome_Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using DearHome_Backend.Constants;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DearHome_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public class ProductController : ControllerBase
     {
         private readonly IProductService _productService;
@@ -22,6 +25,7 @@ namespace DearHome_Backend.Controllers
             _mapper = mapper;
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] int offSet = 0, [FromQuery] int limit = 10, [FromQuery] string? searchString = null, [FromQuery] string? filter = null, [FromQuery] string? sortBy = null, [FromQuery] bool isDescending = false)
         {
@@ -29,6 +33,7 @@ namespace DearHome_Backend.Controllers
             return Ok(products);
         }
 
+        [AllowAnonymous]
         [HttpGet("top-sales")]
         public async Task<IActionResult> GetTopSalesProducts([FromQuery] int count)
         {
@@ -37,6 +42,7 @@ namespace DearHome_Backend.Controllers
             return Ok(productDtos);
         }
 
+        [AllowAnonymous]
         [HttpGet("get-by-category/{id}")]
         public async Task<IActionResult> GetByCategoryId(Guid id)
         {
@@ -44,6 +50,7 @@ namespace DearHome_Backend.Controllers
             return Ok(products);
         }
 
+        [AllowAnonymous]
         [HttpGet("with-variants")]
         public async Task<IActionResult> GetAllWithVariants()
         {
@@ -51,6 +58,7 @@ namespace DearHome_Backend.Controllers
             return Ok(products);
         }
 
+        [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {

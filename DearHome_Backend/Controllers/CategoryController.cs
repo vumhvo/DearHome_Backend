@@ -5,11 +5,14 @@ using DearHome_Backend.Models;
 using DearHome_Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using DearHome_Backend.Constants;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DearHome_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public class CategoryController : ControllerBase
     {
         private readonly ICategoryService _categoryService;
@@ -21,6 +24,7 @@ namespace DearHome_Backend.Controllers
             _categoryService = categoryService;
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAllCategories()
         {
@@ -29,6 +33,7 @@ namespace DearHome_Backend.Controllers
             return Ok(categoryDtos);
         }
 
+        [AllowAnonymous]
         [HttpGet("parent-categories")]
         public async Task<IActionResult> GetAllParentCategories()
         {
@@ -37,6 +42,7 @@ namespace DearHome_Backend.Controllers
             return Ok(categoryDtos);
         }   
 
+        [AllowAnonymous]
         [HttpGet("get-by-slug/{slug}")]
         public async Task<IActionResult> GetCategoryBySlug(string slug)
         {
@@ -50,6 +56,7 @@ namespace DearHome_Backend.Controllers
         } 
 
 
+        [AllowAnonymous]
         [HttpGet("with-parent-and-attributes")]
         public async Task<IActionResult> GetAllCategoriesWithParentAndAttributes()
         {
@@ -58,6 +65,7 @@ namespace DearHome_Backend.Controllers
             return Ok(categoryDtos);
         }
 
+        [AllowAnonymous]
         [HttpGet("with-attributes-and-attribute-values")]
         public async Task<IActionResult> GetAllCategoriesWithAttributesAndAttributeValues()
         {
@@ -66,6 +74,7 @@ namespace DearHome_Backend.Controllers
             return Ok(categoryDtos);
         }
 
+        [AllowAnonymous]
         [HttpGet("{name}")]
         public async Task<IActionResult> GetCategoryByName(string name)
         {
@@ -77,6 +86,7 @@ namespace DearHome_Backend.Controllers
             return Ok(category);
         }
 
+        [AllowAnonymous]
         [HttpGet("parent/{parentId}")]
         public async Task<IActionResult> GetCategoriesByParentId(Guid parentId)
         {

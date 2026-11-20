@@ -5,11 +5,14 @@ using DearHome_Backend.Models;
 using DearHome_Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using DearHome_Backend.Constants;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DearHome_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public class VariantController : ControllerBase
     {
         private readonly IVariantService _variantService;
@@ -21,6 +24,7 @@ namespace DearHome_Backend.Controllers
             _mapper = mapper;
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -28,6 +32,7 @@ namespace DearHome_Backend.Controllers
             return Ok(variants);
         }
 
+        [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -39,6 +44,7 @@ namespace DearHome_Backend.Controllers
             return Ok(variant);
         }
 
+        [AllowAnonymous]
         [HttpGet("get-by-product/{productId}")]
         public async Task<IActionResult> GetByProductId(Guid productId)
         {

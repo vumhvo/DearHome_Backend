@@ -4,11 +4,14 @@ using DearHome_Backend.Models;
 using DearHome_Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using DearHome_Backend.Constants;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DearHome_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public class GoodReceivedNoteController : ControllerBase
     {
         private readonly IGoodReceivedNoteService _goodReceivedNoteService;

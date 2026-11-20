@@ -2,11 +2,13 @@ using DearHome_Backend.DTOs.PaymentDto;
 using DearHome_Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DearHome_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class PaymentController : ControllerBase
     {
         private readonly IPaymentService _paymentService;
@@ -23,6 +25,7 @@ namespace DearHome_Backend.Controllers
             return Ok(paymentInfo);
         }
 
+        [AllowAnonymous]
         [HttpPost("verify-webhook")]
         public IActionResult VerifyWebhook([FromQuery] VerifyPaymentDto verifyPaymentDto)
         {

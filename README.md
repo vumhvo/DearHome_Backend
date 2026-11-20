@@ -91,7 +91,7 @@ docker run -d --name nats -p 4222:4222 nats:latest
 
 ### Cấu hình
 
-`appsettings*.json` đã bị bỏ qua trong `.gitignore`, nên bạn cần tự tạo `DearHome_Backend/appsettings.Development.json`:
+`appsettings*.json` đã bị bỏ qua trong `.gitignore` (trừ [`appsettings.example.json`](DearHome_Backend/appsettings.example.json) — mẫu đầy đủ mọi khoá cấu hình), nên bạn cần tự tạo `DearHome_Backend/appsettings.Development.json`, ví dụ bằng cách sao chép file mẫu:
 
 ```jsonc
 {
@@ -142,9 +142,11 @@ docker run -d --name nats -p 4222:4222 nats:latest
 
 Lưu ý:
 
-- **Firebase service account**: đặt file JSON vào thư mục `DearHome_Backend/Credentials/`. Tên file đang được khai báo cứng trong [`Program.cs`](DearHome_Backend/Program.cs) (biến `firebaseCredentialPath`), hãy sửa cho khớp với file của bạn.
+- **Firebase service account**: đặt file JSON vào thư mục `DearHome_Backend/Credentials/` và khai báo đường dẫn ở `Firebase:CredentialPath` (nếu bỏ trống sẽ dùng đường dẫn mặc định trong [`Program.cs`](DearHome_Backend/Program.cs)).
 - **JWT**: `Jwt:Key`, `Jwt:Issuer`, `Jwt:Audience` phải **trùng** với `JWT_SECRET_KEY`, `JWT_ISSUER`, `JWT_AUDIENCE` của AI Backend, vì AI Backend xác thực cùng token này.
-- **NATS**: thông tin kết nối lấy từ giá trị mặc định trong [`Config/NatsConfig.cs`](DearHome_Backend/Config/NatsConfig.cs) (`nats://0.0.0.0:4222`).
+- **NATS**: cấu hình ở mục `Nats` (`Url`, `Username`, `Password`, `ConnectionTimeout`); mặc định `nats://localhost:4222`, không có tài khoản.
+- **CORS**: khai báo các origin của frontend ở `Cors:AllowedOrigins`. Nếu để trống, API cho phép mọi origin và ghi cảnh báo khi khởi động.
+- **Phân quyền**: các API quản trị yêu cầu JWT có role `Admin`; các API của khách hàng (đặt hàng, hồ sơ, đánh giá…) yêu cầu đăng nhập.
 
 ### Tạo cơ sở dữ liệu
 

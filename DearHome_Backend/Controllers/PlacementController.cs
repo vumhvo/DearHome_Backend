@@ -5,11 +5,14 @@ using DearHome_Backend.Models;
 using DearHome_Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using DearHome_Backend.Constants;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DearHome_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     public class PlacementController : ControllerBase
     {
         private readonly IPlacementService _placementService;
@@ -20,6 +23,7 @@ namespace DearHome_Backend.Controllers
             _mapper = mapper;
         }
 
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -27,6 +31,7 @@ namespace DearHome_Backend.Controllers
             return Ok(placements);
         }
 
+        [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {

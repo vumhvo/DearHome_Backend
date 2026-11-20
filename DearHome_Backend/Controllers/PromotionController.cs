@@ -4,11 +4,14 @@ using DearHome_Backend.Models;
 using DearHome_Backend.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using DearHome_Backend.Constants;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DearHome_Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class PromotionController : ControllerBase
     {
         private readonly IPromotionService _promotionService;
@@ -20,6 +23,7 @@ namespace DearHome_Backend.Controllers
             _mapper = mapper;
         }
 
+        [Authorize(Roles = nameof(UserRole.Admin))]
         [HttpGet]
         public async Task<IActionResult> GetAllPromotions([FromQuery] int offSet=0, [FromQuery] int limit=10, [FromQuery] string? search=null, [FromQuery] string? filter=null, [FromQuery] string? sortBy=null, [FromQuery] bool isDescending=false)
         {
@@ -27,6 +31,7 @@ namespace DearHome_Backend.Controllers
             return Ok(promotions);
         }
 
+        [Authorize(Roles = nameof(UserRole.Admin))]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetPromotion(Guid id)
         {
@@ -39,6 +44,7 @@ namespace DearHome_Backend.Controllers
             return Ok(promotionDto);
         }
 
+        [Authorize(Roles = nameof(UserRole.Admin))]
         [HttpPost]
         public async Task<IActionResult> CreatePromotion([FromBody] AddPromotionDto promotionDto)
         {
@@ -60,6 +66,7 @@ namespace DearHome_Backend.Controllers
             return Ok(promotionDtos);
         }
 
+        [Authorize(Roles = nameof(UserRole.Admin))]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdatePromotion(Guid id, [FromBody] UpdatePromotionDto promotionDto)
         {

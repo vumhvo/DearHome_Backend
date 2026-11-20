@@ -18,6 +18,7 @@ publish/
 
 # ASP.NET
 appsettings*.json
+!appsettings.example.json
 Credentials/*
 
 # Rider
