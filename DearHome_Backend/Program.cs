@@ -16,7 +16,6 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using DearHome_Backend.Config;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,8 +51,8 @@ builder.Services.AddIdentity<User, IdentityRole<Guid>>() // Use IdentityRole<Gui
 
 ServiceExtensions.AddScopedServices(builder.Services);
 ServiceExtensions.AddScopedRepositories(builder.Services);
+ServiceExtensions.AddApplicationOptions(builder.Services, builder.Configuration);
 ServiceExtensions.AddHttpClients(builder.Services, builder.Configuration);
-builder.Services.Configure<NatsConfig>(builder.Configuration.GetSection("Nats"));
 
 builder.Services.AddApplicationInsightsTelemetry(options =>
 {

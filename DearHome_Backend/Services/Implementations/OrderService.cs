@@ -4,6 +4,7 @@ using DearHome_Backend.DTOs.PaginationDtos;
 using DearHome_Backend.Models;
 using DearHome_Backend.Repositories.Interfaces;
 using DearHome_Backend.Services.Interfaces;
+using DearHome_Backend.Services.Pricing;
 using Net.payOS.Types;
 
 namespace DearHome_Backend.Services.Implementations;
@@ -177,22 +178,25 @@ public class OrderService : BaseService<Order>, IOrderService
         await _orderRepository.UpdateOrderStatusByIdAsync(orderId, status);
     }
 
+    /// <summary>
+    /// Loads the pricing inputs (variant prices, promotion, shipment) and applies <see cref="OrderPricingCalculator"/>
+    /// to fill in line prices, <c>TotalPrice</c>, <c>Discount</c>, <c>ShippingCode</c> and <c>FinalPrice</c>.
+    /// </summary>
     private async Task<Order> CalculatedOrderAsync(Order order)
     {
-        decimal FinalPrice = 0;
-
         foreach (var orderDetail in order.OrderDetails!)
         {
             var orderItem = await _variantRepository.GetWithProductByIdAsync(orderDetail.VariantId);
 
-            orderDetail.UnitPrice = orderItem!.PriceAdjustment + orderItem.Product!.Price;
-            orderDetail.TotalPrice = orderDetail.UnitPrice * orderDetail.Quantity;
-
-            FinalPrice += orderDetail.TotalPrice;
+            orderDetail.UnitPrice = OrderPricingCalculator.CalculateUnitPrice(orderItem!.Product!.Price, orderItem.PriceAdjustment);
+            orderDetail.TotalPrice = OrderPricingCalculator.CalculateLineTotal(orderDetail.UnitPrice, orderDetail.Quantity);
         }
 
         // Calculate the total price of the order
-        order.TotalPrice = FinalPrice;
+        var subtotal = OrderPricingCalculator.CalculateSubtotal(order.OrderDetails.Select(od => od.TotalPrice));
+        order.TotalPrice = subtotal;
+
+        decimal appliedDiscount = 0;
 
         // Check if the order has a promotion ID and set it to null if it's empty
         if (order.PromotionId.HasValue && order.PromotionId == Guid.Empty)
@@ -201,29 +205,31 @@ public class OrderService : BaseService<Order>, IOrderService
         }
         else
         {
+            // NOTE: pre-existing behaviour kept as-is: this looks up an *Order* by the promotion id and uses its
+            // Discount as the percentage. It most likely should load the Promotion and use DiscountPercentage.
             var promotion = await _orderRepository.GetByIdAsync(order.PromotionId!);
             if (promotion != null)
             {
-                order.Discount = FinalPrice * promotion.Discount / 100;
-                FinalPrice -= order.Discount;
+                order.Discount = OrderPricingCalculator.CalculateDiscount(subtotal, promotion.Discount);
+                appliedDiscount = order.Discount;
             }
-
         }
 
+        decimal shippingFee = 0;
         if (order.ShippingRate != null)
         {
             var shipping = await _shippingService.CreateShipmentAsync(order.ShippingRate, order.AddressId, order.AddressId, order.PaymentMethod == PaymentMethods.Cash ? ((int)order.TotalPrice).ToString() : "0", "0", "0", "0", "0");
 
             order.ShippingCode = shipping.Id;
 
-            FinalPrice += shipping.Fee;
+            shippingFee = shipping.Fee;
         }
 
-        order.FinalPrice = FinalPrice;
+        order.FinalPrice = OrderPricingCalculator.CalculateFinalPrice(subtotal, appliedDiscount, shippingFee);
 
         return order;
     }
-    
+
     // Create a DTO for order events
     private async Task<object> CreateOrderEventData(Order order)
     {

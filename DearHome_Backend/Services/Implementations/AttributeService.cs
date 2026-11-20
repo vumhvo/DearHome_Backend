@@ -3,6 +3,7 @@ using DearHome_Backend.Data;
 using DearHome_Backend.Repositories.Interfaces;
 using DearHome_Backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using DearHome_Backend.Exceptions;
 
 namespace DearHome_Backend.Services.Implementations;
 
@@ -45,7 +46,7 @@ public class AttributeService : BaseService<Models.Attribute>, IAttributeService
         var existingEntity = await _repository.GetByIdWithAttributeValuesAsync(entity.Id);
         if (existingEntity == null)
         {
-            throw new KeyNotFoundException($"Attribute with ID {entity.Id} not found.");
+            throw new NotFoundException($"Attribute with ID {entity.Id} not found.");
         }
 
         //Track the existing attribute values

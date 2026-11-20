@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using DearHome_Backend.Exceptions;
 
 namespace DearHome_Backend.Middlewares;
 
@@ -73,12 +74,16 @@ public class ErrorHandlerMiddleware
         await context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse));
     }
 
+    // InvalidOperationException is deliberately not mapped: it is what configuration and EF Core internals throw,
+    // so it falls through to 500 and its message is hidden outside Development. Business/validation failures
+    // must throw BusinessRuleException (400) or NotFoundException (404) instead.
     private static int GetStatusCode(HttpContext context, Exception exception) => exception switch
     {
-        KeyNotFoundException => (int)HttpStatusCode.NotFound,
+        NotFoundException or KeyNotFoundException => (int)HttpStatusCode.NotFound,
+        BusinessRuleException => (int)HttpStatusCode.BadRequest,
         BadHttpRequestException badRequest => badRequest.StatusCode,
         ArgumentException => (int)HttpStatusCode.BadRequest,
-        InvalidOperationException => (int)HttpStatusCode.BadRequest,
+        ForbiddenException => (int)HttpStatusCode.Forbidden,
         // 401 makes the frontend clear the session and redirect to login, so only use it when the caller is
         // not authenticated. An authenticated caller lacking permission gets 403.
         UnauthorizedAccessException => context.User.Identity?.IsAuthenticated == true

@@ -5,6 +5,7 @@ using DearHome_Backend.Models;
 using DearHome_Backend.Repositories.Interfaces;
 using DearHome_Backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using DearHome_Backend.Exceptions;
 
 namespace DearHome_Backend.Services.Implementations;
 
@@ -22,7 +23,7 @@ public class BaseService <T> : IBaseService<T> where T : BaseEntity
         var entity = await _repository.GetByIdAsync(id);
         if (entity == null)
         {
-            throw new KeyNotFoundException($"Entity with id {id} not found.");
+            throw new NotFoundException($"Entity with id {id} not found.");
         }
         return entity;
     }
@@ -56,7 +57,7 @@ public class BaseService <T> : IBaseService<T> where T : BaseEntity
         var existingEntity = await _repository.GetByIdAsync(entity.Id);
         if (existingEntity == null)
         {
-            throw new KeyNotFoundException($"Entity with id {entity.Id} not found.");
+            throw new NotFoundException($"Entity with id {entity.Id} not found.");
         }
         await _repository.UpdateAsync(entity);
         return entity;
@@ -67,7 +68,7 @@ public class BaseService <T> : IBaseService<T> where T : BaseEntity
         var entity = await _repository.GetByIdAsync(id);
         if (entity == null)
         {
-            throw new KeyNotFoundException($"Entity with id {id} not found.");
+            throw new NotFoundException($"Entity with id {id} not found.");
         }
         await _repository.DeleteAsync(id);
     }

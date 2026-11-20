@@ -25,6 +25,7 @@ public class ProductRepository : BaseRepository<Product>, IProductRepository
 
     public override async Task<PaginatedResult<Product>> GetAllAsync(int offSet, int limit, string? search = null)
     {
+        (offSet, limit) = NormalizePaging(offSet, limit);
         var query = _context.Products.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
@@ -48,6 +49,7 @@ public class ProductRepository : BaseRepository<Product>, IProductRepository
 
     public override async Task<PaginatedResult<Product>> GetAllAsync(int offSet, int limit, string? search = null, string? filter = null, string? sortBy = null, bool isDescending = false)
     {
+        (offSet, limit) = NormalizePaging(offSet, limit);
         var query = _context.Products.AsQueryable();
 
         query = query

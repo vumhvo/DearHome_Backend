@@ -5,6 +5,9 @@ using DearHome_Backend.Repositories.Interfaces;
 using DearHome_Backend.Repositories.Implementations;
 using Microsoft.AspNetCore.Identity;
 using DearHome_Backend.Models;
+using DearHome_Backend.Config;
+using DearHome_Backend.Services.External;
+using Microsoft.Extensions.Options;
 
 namespace DearHome_Backend.Helpers;
 
@@ -13,6 +16,8 @@ public static class ServiceExtensions
     public static void AddScopedServices(this IServiceCollection services)
     {
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IVerificationCodeService, VerificationCodeService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IAttributeService, AttributeService>();
@@ -24,6 +29,9 @@ public static class ServiceExtensions
         services.AddScoped<IGoodReceivedNoteService, GoodReceivedNoteService>();
         services.AddScoped<IAddressRepository, AddressRepository>();
         services.AddScoped<IOrderService, OrderService>();
+        services.AddScoped<IShippingService, ShippingService>();
+        services.AddScoped<IPaymentService, PaymentService>();
+        services.AddScoped<IPayOSClient, PayOSClient>();
         services.AddScoped<IPromotionService, PromotionService>();
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IStatisticService, StatisticService>();
@@ -49,19 +57,33 @@ public static class ServiceExtensions
         services.AddScoped<IReviewRepository, ReviewRepository>();
     }
 
+    /// <summary>
+    /// Binds strongly-typed settings classes (consumed via <see cref="IOptions{TOptions}"/>).
+    /// </summary>
+    public static void AddApplicationOptions(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<NatsConfig>(configuration.GetSection("Nats"));
+        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.Configure<GoshipOptions>(configuration.GetSection(GoshipOptions.SectionName));
+        services.Configure<PayOSOptions>(configuration.GetSection(PayOSOptions.SectionName));
+    }
+
+    /// <summary>
+    /// Typed HttpClients for external APIs (transient, handlers pooled by IHttpClientFactory).
+    /// </summary>
     public static void AddHttpClients(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddHttpClient<IShippingService, ShippingService>(client =>
+        services.AddHttpClient<IGoshipClient, GoshipClient>((serviceProvider, client) =>
         {
-            client.BaseAddress = new Uri(configuration["Goship:BaseUrl"]!);
+            var baseUrl = serviceProvider.GetRequiredService<IOptions<GoshipOptions>>().Value.BaseUrl;
+            if (string.IsNullOrEmpty(baseUrl))
+            {
+                throw new InvalidOperationException("GoShip:BaseUrl is not configured in application settings.");
+            }
+            client.BaseAddress = new Uri(baseUrl);
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
         });
-        services.AddHttpClient<IPaymentService, PaymentService>(client =>
-        {
-            client.BaseAddress = new Uri(configuration["PayOS:BaseUrl"]!);
-            client.DefaultRequestHeaders.Accept.Clear();
-            client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-        });
+        services.AddHttpClient<IGoogleAuthService, GoogleAuthService>();
     }
 }
