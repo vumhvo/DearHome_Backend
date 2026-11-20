@@ -184,7 +184,7 @@ catch (Exception ex)
     app.Logger.LogError(ex, "Database connection failed: {Message}", ex.Message);
 }
 
-app.UseMiddleware<ErrorHandlerMiddleware.GlobalErrorHandlerMiddleware>();
+app.UseMiddleware<ErrorHandlerMiddleware>();
 
 app.UseCors(CorsPolicyName);
 

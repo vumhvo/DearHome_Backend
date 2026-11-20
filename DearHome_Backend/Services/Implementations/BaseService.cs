@@ -6,7 +6,7 @@ using DearHome_Backend.Repositories.Interfaces;
 using DearHome_Backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace DearHome_Backend.Services.Inplementations;
+namespace DearHome_Backend.Services.Implementations;
 
 public class BaseService <T> : IBaseService<T> where T : BaseEntity
 {

@@ -1,5 +1,5 @@
 using System;
-using DearHome_Backend.DTOs.VariantAttributeDtos;
+using DearHome_Backend.DTOs.VariantDtos;
 
 namespace DearHome_Backend.DTOs.GoodReceivedItemDtos;
 
@@ -11,5 +11,7 @@ public class GoodReceivedItemDto
     public required int Quantity { get; set; }
     public required decimal UnitCost { get; set; }
     public required decimal TotalCost { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
     public virtual VariantDto? Variant { get; set; }
 }

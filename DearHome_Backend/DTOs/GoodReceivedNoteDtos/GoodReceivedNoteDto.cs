@@ -13,5 +13,7 @@ public class GoodReceivedNoteDto
     public decimal TotalCost { get; set; } = 0;
     public decimal ShippingCost { get; set; } = 0;
     public GoodReceivedNoteStatus Status { get; set; } = GoodReceivedNoteStatus.Received;
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
     public virtual ICollection<GoodReceivedItemDto>? GoodReceivedItems { get; set; } = new List<GoodReceivedItemDto>();
 }

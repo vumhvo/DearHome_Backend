@@ -27,5 +27,7 @@ public class OrderDto
     public long? PaymentOrderCode { get; set; }
     public string? PaymentLinkId { get; set; }
     public string? PaymentLinkUrl { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
     public virtual ICollection<OrderDetailDto>? OrderDetails { get; set; }
 }

@@ -10,150 +10,151 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using DearHome_Backend.Constants;
 
-namespace DearHome_Backend.Controllers
+namespace DearHome_Backend.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+[Authorize]
+public class UserController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    [Authorize]
-    public class UserController : ControllerBase
+    private readonly IUserService _userService;
+    private readonly IMapper _mapper;
+    private readonly UserManager<User> _userManager;
+
+    public UserController(IUserService userService, IMapper mapper, UserManager<User> userManager)
     {
-        private readonly IUserService _userService;
-        private readonly IMapper _mapper;
-        private readonly UserManager<User> _userManager;
+        _userService = userService;
+        _mapper = mapper;
+        _userManager = userManager;
+    }
 
-        public UserController(IUserService userService, IMapper mapper, UserManager<User> userManager)
+    [Authorize(Roles = nameof(UserRole.Admin))]
+    [HttpGet("all-customers")]
+    public async Task<IActionResult> GetAllCustomers([FromQuery] int offSet, [FromQuery] int limit)
+    {
+        var customers = await _userService.GetAllCustomersAsync(offSet, limit);
+        var customerDtos = _mapper.Map<IEnumerable<UserDto>>(customers);
+        return Ok(customerDtos);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetUser(Guid id)
+    {
+        var user = await _userService.GetUserAsync(id);
+        if (user == null)
         {
-            _userService = userService;
-            _mapper = mapper;
-            _userManager = userManager;
+            return NotFound("User not found.");
+        }
+        var userDto = _mapper.Map<UserDto>(user);
+        return Ok(userDto);
+    }
+
+    [HttpGet("me")]
+    public async Task<IActionResult> GetCurrentUser()
+    {
+        // Extract user ID from the bearer token claims
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
+        {
+            return Unauthorized("Invalid authentication token.");
         }
 
-        [Authorize(Roles = nameof(UserRole.Admin))]
-        [HttpGet("all-customers")]
-        public async Task<IActionResult> GetAllCustomers([FromQuery] int offSet, [FromQuery] int limit)
+        var user = await _userService.GetUserAsync(userGuid);
+        if (user == null)
         {
-            var customers = await _userService.GetAllCustomersAsync(offSet, limit);
-            var customerDtos = _mapper.Map<IEnumerable<UserDto>>(customers);
-            return Ok(customerDtos);
+            return NotFound("User not found.");
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetUser(Guid id)
+        var userDto = _mapper.Map<UserDto>(user);
+        return Ok(userDto);
+    }
+
+    [AllowAnonymous]
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] UserLoginDto userLoginDto)
+    {
+        var token = await _userService.LoginAsync(userLoginDto.UserName, userLoginDto.Password);
+        return Ok(token);
+    }
+
+    [AllowAnonymous]
+    [HttpPost("login-google")]
+    public async Task<IActionResult> LoginWithGoogle([FromBody] GoogleLoginDto googleLoginDto)
+    {
+        var accessToken = googleLoginDto.AccessToken;
+
+        if (string.IsNullOrEmpty(accessToken))
         {
-            var user = await _userService.GetUserAsync(id);
-            if (user == null)
-            {
-                return NotFound("User not found.");
-            }
-            return Ok(user);
+            return BadRequest("Access token is required.");
         }
 
-        [HttpGet("me")]
-        public async Task<IActionResult> GetCurrentUser()
+        var token = await _userService.LoginWithGoogleAsync(accessToken);
+        return Ok(token);
+    }
+
+    [AllowAnonymous]
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] UserRegisterDto userRegisterDto)
+    {
+        var user = _mapper.Map<User>(userRegisterDto);
+        await _userService.RegisterAsync(user, userRegisterDto.Password, userRegisterDto.VerificationCode);
+        return Ok("User registered successfully.");
+    }
+
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout([FromBody] string token)
+    {
+        if (string.IsNullOrEmpty(token))
         {
-            // Extract user ID from the bearer token claims
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
-            {
-                return Unauthorized("Invalid authentication token.");
-            }
-
-            var user = await _userService.GetUserAsync(userGuid);
-            if (user == null)
-            {
-                return NotFound("User not found.");
-            }
-
-            return Ok(user);
+            return BadRequest("Token is required.");
         }
 
-        [AllowAnonymous]
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] UserLoginDto userLoginDto)
+        await _userService.LogoutAsync(token);
+        return Ok("User logged out successfully.");
+    }
+
+    [AllowAnonymous]
+    [HttpPost("send-verification-code")]
+    public async Task<IActionResult> SendVerificationCode([FromBody] VerificationCodeDto verificationCodeDto)
+    {
+        if (string.IsNullOrEmpty(verificationCodeDto.Email))
         {
-            var token = await _userService.LoginAsync(userLoginDto.UserName, userLoginDto.Password);
-            return Ok(token);
+            return BadRequest("Email and verification code are required.");
         }
 
-        [AllowAnonymous]
-        [HttpPost("login-google")]
-        public async Task<IActionResult> LoginWithGoogle([FromBody] GoogleLoginDto googleLoginDto)
+        await _userService.SendVerificationCodeAsync(verificationCodeDto.Email);
+
+        return Ok("Verification code sent successfully.");
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> UpdateUser([FromBody] UpdateUserDto updateUserDto)
+    {
+        var user = _mapper.Map<User>(updateUserDto);
+        await _userService.UpdateAsync(user);
+
+        return Ok();
+    }
+
+    [HttpPut("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
+    {
+        // Get user ID from the token claims
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
         {
-            var accessToken = googleLoginDto.AccessToken;
-
-            if (string.IsNullOrEmpty(accessToken))
-            {
-                return BadRequest("Access token is required.");
-            }
-
-            var token = await _userService.LoginWithGoogleAsync(accessToken);
-            return Ok(token);
+            return Unauthorized("Invalid authentication token.");
         }
 
-        [AllowAnonymous]
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] UserRegisterDto userRegisterDto)
+        // Validate the request
+        if (string.IsNullOrEmpty(changePasswordDto.CurrentPassword) || string.IsNullOrEmpty(changePasswordDto.NewPassword))
         {
-            var user = _mapper.Map<User>(userRegisterDto);
-            await _userService.RegisterAsync(user, userRegisterDto.Password, userRegisterDto.VerificationCode);
-            return Ok("User registered successfully.");
+            return BadRequest("Current password and new password are required.");
         }
 
-        [HttpPost("logout")]
-        public async Task<IActionResult> Logout([FromBody] string token)
-        {
-            if (string.IsNullOrEmpty(token))
-            {
-                return BadRequest("Token is required.");
-            }
+        // Call service to change password
+        await _userService.ChangePasswordAsync(userGuid, changePasswordDto.CurrentPassword, changePasswordDto.NewPassword, changePasswordDto.ConfirmNewPassword);
 
-            await _userService.LogoutAsync(token);
-            return Ok("User logged out successfully.");
-        }
-
-        [AllowAnonymous]
-        [HttpPost("send-verification-code")]
-        public async Task<IActionResult> SendVerificationCode([FromBody] VerificationCodeDto verificationCodeDto)
-        {
-            if (string.IsNullOrEmpty(verificationCodeDto.Email))
-            {
-                return BadRequest("Email and verification code are required.");
-            }
-
-            await _userService.SendVerificationCodeAsync(verificationCodeDto.Email);
-
-            return Ok("Verification code sent successfully.");
-        }
-
-        [HttpPut]
-        public async Task<IActionResult> UpdateUser([FromBody] UpdateUserDto updateUserDto)
-        {
-            var user = _mapper.Map<User>(updateUserDto);
-            await _userService.UpdateAsync(user);
-
-            return Ok();
-        }
-
-        [HttpPut("change-password")]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
-        {
-            // Get user ID from the token claims
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var userGuid))
-            {
-                return Unauthorized("Invalid authentication token.");
-            }
-
-            // Validate the request
-            if (string.IsNullOrEmpty(changePasswordDto.CurrentPassword) || string.IsNullOrEmpty(changePasswordDto.NewPassword))
-            {
-                return BadRequest("Current password and new password are required.");
-            }
-
-            // Call service to change password
-            await _userService.ChangePasswordAsync(userGuid, changePasswordDto.CurrentPassword, changePasswordDto.NewPassword, changePasswordDto.ConfirmNewPassword);
-
-            return Ok("Password changed successfully.");
-        }
+        return Ok("Password changed successfully.");
     }
 }

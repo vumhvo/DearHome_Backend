@@ -1,6 +1,6 @@
 using System;
 
-namespace DearHome_Backend.DTOs;
+namespace DearHome_Backend.DTOs.PlacementDtos;
 
 public class UpdatePlacementDto
 {

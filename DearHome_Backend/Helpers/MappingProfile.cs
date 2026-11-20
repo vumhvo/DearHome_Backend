@@ -1,6 +1,5 @@
 using System;
 using AutoMapper;
-using DearHome_Backend.DTOs;
 using DearHome_Backend.DTOs.AddressDtos;
 using DearHome_Backend.DTOs.AttributeDtos;
 using DearHome_Backend.DTOs.AttributeValueDtos;
@@ -19,8 +18,6 @@ using DearHome_Backend.DTOs.VariantAttributeDtos;
 using DearHome_Backend.DTOs.VariantDtos;
 using DearHome_Backend.Modals;
 using DearHome_Backend.Models;
-using DearHome_Backend.Models.OrderDetailDtos;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace DearHome_Backend.Helpers;
 
@@ -87,6 +84,11 @@ public class MappingProfile : Profile
         CreateMap<UpdatePromotionDto, Promotion>();
 
         CreateMap<Review, ReviewDto>();
+        CreateMap<Review, ReviewSummaryDto>();
+        CreateMap<Review, ProductReviewDto>();
+        CreateMap<OrderDetail, ProductReviewOrderDetailDto>();
+        CreateMap<Order, ProductReviewOrderDto>();
+        CreateMap<User, ReviewerDto>();
         CreateMap<AddReviewDto, Review>();
         CreateMap<UpdateReviewDto, Review>();
     }

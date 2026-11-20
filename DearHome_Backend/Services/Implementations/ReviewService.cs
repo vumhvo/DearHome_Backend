@@ -1,9 +1,8 @@
-using System;
+using AutoMapper;
 using DearHome_Backend.DTOs.PaginationDtos;
 using DearHome_Backend.DTOs.ReviewDtos;
 using DearHome_Backend.Models;
 using DearHome_Backend.Repositories.Interfaces;
-using DearHome_Backend.Services.Inplementations;
 using DearHome_Backend.Services.Interfaces;
 
 namespace DearHome_Backend.Services.Implementations;
@@ -11,9 +10,12 @@ namespace DearHome_Backend.Services.Implementations;
 public class ReviewService : BaseService<Review>, IReviewService
 {
     private readonly IReviewRepository _reviewRepository;
-    public ReviewService(IReviewRepository reviewRepository) : base(reviewRepository)
+    private readonly IMapper _mapper;
+
+    public ReviewService(IReviewRepository reviewRepository, IMapper mapper) : base(reviewRepository)
     {
         _reviewRepository = reviewRepository;
+        _mapper = mapper;
     }
 
     public async Task<IEnumerable<Review>> GetByOrderIdAsync(Guid orderId)
@@ -35,7 +37,7 @@ public class ReviewService : BaseService<Review>, IReviewService
 
         return new ProductReviewsDto
         {
-            Reviews = paginatedReviews,    
+            Reviews = paginatedReviews.MapData(data => _mapper.Map<List<ProductReviewDto>>(data)),
             AverageRating = reviews.Count > 0 ? reviews.Average(r => r.Rating) : 0,
             TotalReviews = reviews.Count,
             RatingCounts = new Dictionary<decimal, int>()

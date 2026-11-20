@@ -1,52 +1,89 @@
-using System;
 using System.Net;
 using System.Text.Json;
 
 namespace DearHome_Backend.Middlewares;
 
+/// <summary>
+/// Converts unhandled exceptions into a JSON error response: { "message": ..., "statusCode": ... }.
+/// The frontend reads <c>error.response.data.message</c>, so that shape must stay stable.
+/// </summary>
 public class ErrorHandlerMiddleware
 {
-public class GlobalErrorHandlerMiddleware
+    private const string GenericErrorMessage = "An unexpected error occurred. Please try again later.";
+
+    private readonly RequestDelegate _next;
+    private readonly ILogger<ErrorHandlerMiddleware> _logger;
+    private readonly IHostEnvironment _environment;
+
+    public ErrorHandlerMiddleware(RequestDelegate next, ILogger<ErrorHandlerMiddleware> logger, IHostEnvironment environment)
     {
-        private readonly RequestDelegate _next;
+        _next = next;
+        _logger = logger;
+        _environment = environment;
+    }
 
-        public GlobalErrorHandlerMiddleware(RequestDelegate next)
+    public async Task InvokeAsync(HttpContext context)
+    {
+        try
         {
-            _next = next;
+            await _next(context);
         }
-
-        public async Task InvokeAsync(HttpContext context)
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
         {
-            try
-            {
-                await _next(context); // Call the next middleware in the pipeline
-            }
-            catch (Exception ex)
-            {
-                await HandleExceptionAsync(context, ex);
-            }
+            // The client disconnected; there is nobody to send a response to.
+            _logger.LogDebug("Request {Method} {Path} was cancelled by the client.", context.Request.Method, context.Request.Path);
         }
-
-        private static Task HandleExceptionAsync(HttpContext context, Exception exception)
+        catch (Exception ex)
         {
-            var response = context.Response;
-            response.ContentType = "application/json";
-
-            // Set the status code based on the exception type (customize as needed)
-            response.StatusCode = exception switch
+            if (context.Response.HasStarted)
             {
-                KeyNotFoundException => (int)HttpStatusCode.NotFound,
-                UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
-                _ => (int)HttpStatusCode.InternalServerError
-            };
+                _logger.LogError(ex, "Unhandled exception after the response started for {Method} {Path}.", context.Request.Method, context.Request.Path);
+                throw;
+            }
 
-            var errorResponse = new
-            {
-                message = exception.Message,
-                statusCode = response.StatusCode
-            };
-
-            return response.WriteAsync(JsonSerializer.Serialize(errorResponse));
+            await HandleExceptionAsync(context, ex);
         }
     }
+
+    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    {
+        var statusCode = GetStatusCode(context, exception);
+        var isServerError = statusCode >= StatusCodes.Status500InternalServerError;
+
+        if (isServerError)
+        {
+            _logger.LogError(exception, "Unhandled exception for {Method} {Path}.", context.Request.Method, context.Request.Path);
+        }
+        else
+        {
+            _logger.LogWarning("Request {Method} {Path} failed with {StatusCode}: {Message}", context.Request.Method, context.Request.Path, statusCode, exception.Message);
+        }
+
+        // Client errors carry a message meant for the caller. Server errors only expose details in Development.
+        var message = isServerError && !_environment.IsDevelopment() ? GenericErrorMessage : exception.Message;
+
+        object errorResponse = _environment.IsDevelopment()
+            ? new { message, statusCode, detail = exception.ToString() }
+            : new { message, statusCode };
+
+        context.Response.Clear();
+        context.Response.StatusCode = statusCode;
+        context.Response.ContentType = "application/json";
+
+        await context.Response.WriteAsync(JsonSerializer.Serialize(errorResponse));
+    }
+
+    private static int GetStatusCode(HttpContext context, Exception exception) => exception switch
+    {
+        KeyNotFoundException => (int)HttpStatusCode.NotFound,
+        BadHttpRequestException badRequest => badRequest.StatusCode,
+        ArgumentException => (int)HttpStatusCode.BadRequest,
+        InvalidOperationException => (int)HttpStatusCode.BadRequest,
+        // 401 makes the frontend clear the session and redirect to login, so only use it when the caller is
+        // not authenticated. An authenticated caller lacking permission gets 403.
+        UnauthorizedAccessException => context.User.Identity?.IsAuthenticated == true
+            ? (int)HttpStatusCode.Forbidden
+            : (int)HttpStatusCode.Unauthorized,
+        _ => (int)HttpStatusCode.InternalServerError
+    };
 }

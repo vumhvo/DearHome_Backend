@@ -1,5 +1,6 @@
 using System;
 using DearHome_Backend.DTOs.AttributeValueDtos;
+using DearHome_Backend.DTOs.VariantDtos;
 
 namespace DearHome_Backend.DTOs.VariantAttributeDtos;
 

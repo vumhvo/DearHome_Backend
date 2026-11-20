@@ -2,8 +2,8 @@ using System;
 using DearHome_Backend.DTOs.AttributeValueDtos;
 using DearHome_Backend.DTOs.CategoryDtos;
 using DearHome_Backend.DTOs.PlacementDtos;
-using DearHome_Backend.DTOs.VariantAttributeDtos;
 using DearHome_Backend.Models;
+using DearHome_Backend.DTOs.VariantDtos;
 
 namespace DearHome_Backend.DTOs.ProductDtos;
 
@@ -18,6 +18,8 @@ public class ProductDto
     public Guid CategoryId { get; set; }
     public Guid PlacementId { get; set; }
     public virtual string Status { get; set; } = "Available";
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
     public virtual CategoryDto? Category { get; set; }
     public virtual PlacementDto? Placement { get; set; }
     public virtual ICollection<AttributeValueDto>? AttributeValues { get; set; }

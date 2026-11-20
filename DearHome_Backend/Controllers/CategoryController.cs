@@ -8,123 +8,124 @@ using Microsoft.AspNetCore.Mvc;
 using DearHome_Backend.Constants;
 using Microsoft.AspNetCore.Authorization;
 
-namespace DearHome_Backend.Controllers
+namespace DearHome_Backend.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+[Authorize(Roles = nameof(UserRole.Admin))]
+public class CategoryController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    [Authorize(Roles = nameof(UserRole.Admin))]
-    public class CategoryController : ControllerBase
+    private readonly ICategoryService _categoryService;
+    private readonly IMapper _mapper;
+
+    public CategoryController(ICategoryService categoryService, IMapper mapper)
     {
-        private readonly ICategoryService _categoryService;
-        private readonly IMapper _mapper;
+        _mapper = mapper;
+        _categoryService = categoryService;
+    }
 
-        public CategoryController(ICategoryService categoryService, IMapper mapper)
+    [AllowAnonymous]
+    [HttpGet]
+    public async Task<IActionResult> GetAllCategories()
+    {
+        var categories = await _categoryService.GetAllAsync();
+        var categoryDtos = _mapper.Map<List<CategoryDto>>(categories);
+        return Ok(categoryDtos);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("parent-categories")]
+    public async Task<IActionResult> GetAllParentCategories()
+    {
+        var categories = await _categoryService.GetAllParentCategories();
+        var categoryDtos = _mapper.Map<List<CategoryDto>>(categories);
+        return Ok(categoryDtos);
+    }   
+
+    [AllowAnonymous]
+    [HttpGet("get-by-slug/{slug}")]
+    public async Task<IActionResult> GetCategoryBySlug(string slug)
+    {
+        var category = await _categoryService.GetCategoryBySlug(slug);
+        if (category == null)
         {
-            _mapper = mapper;
-            _categoryService = categoryService;
+            return NotFound($"Category with slug '{slug}' not found.");
+        }
+        var categoryDto = _mapper.Map<CategoryDto>(category);
+        return Ok(categoryDto);
+    } 
+
+
+    [AllowAnonymous]
+    [HttpGet("with-parent-and-attributes")]
+    public async Task<IActionResult> GetAllCategoriesWithParentAndAttributes()
+    {
+        var categories = await _categoryService.GetAllWithParentAndAttributes();
+        var categoryDtos = _mapper.Map<List<CategoryDto>>(categories);
+        return Ok(categoryDtos);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("with-attributes-and-attribute-values")]
+    public async Task<IActionResult> GetAllCategoriesWithAttributesAndAttributeValues()
+    {
+        var categories = await _categoryService.GetAllWithAttributesAndAttributeValues();
+        var categoryDtos = _mapper.Map<List<CategoryDto>>(categories);
+        return Ok(categoryDtos);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("{name}")]
+    public async Task<IActionResult> GetCategoryByName(string name)
+    {
+        var category = await _categoryService.GetCategoryByName(name);
+        if (category == null)
+        {
+            return NotFound($"Category with name '{name}' not found.");
+        }
+        var categoryDto = _mapper.Map<CategoryDto>(category);
+        return Ok(categoryDto);
+    }
+
+    [AllowAnonymous]
+    [HttpGet("parent/{parentId}")]
+    public async Task<IActionResult> GetCategoriesByParentId(Guid parentId)
+    {
+        var categories = await _categoryService.GetCategoriesByParentId(parentId);
+        var categoryDtos = _mapper.Map<List<CategoryDto>>(categories);
+        return Ok(categoryDtos);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateCategory([FromBody] AddCategoryDto addCategoryDto)
+    {
+        if (addCategoryDto == null)
+        {
+            return BadRequest("Category data is required.");
         }
 
-        [AllowAnonymous]
-        [HttpGet]
-        public async Task<IActionResult> GetAllCategories()
+        var category = _mapper.Map<Category>(addCategoryDto);
+        await _categoryService.CreateAsync(category);
+        return Ok("Category created successfully.");
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> UpdateCategory([FromBody] UpdateCategoryDto updateCategoryDto)
+    {
+        if (updateCategoryDto == null)
         {
-            var categories = await _categoryService.GetAllAsync();
-            var categoryDtos = _mapper.Map<List<CategoryDto>>(categories);
-            return Ok(categoryDtos);
+            return BadRequest("Category data is required.");
         }
 
-        [AllowAnonymous]
-        [HttpGet("parent-categories")]
-        public async Task<IActionResult> GetAllParentCategories()
-        {
-            var categories = await _categoryService.GetAllParentCategories();
-            var categoryDtos = _mapper.Map<List<CategoryDto>>(categories);
-            return Ok(categoryDtos);
-        }   
+        var category = _mapper.Map<Category>(updateCategoryDto);
+        await _categoryService.UpdateAsync(category);
+        return Ok("Category updated successfully.");
+    }
 
-        [AllowAnonymous]
-        [HttpGet("get-by-slug/{slug}")]
-        public async Task<IActionResult> GetCategoryBySlug(string slug)
-        {
-            var category = await _categoryService.GetCategoryBySlug(slug);
-            if (category == null)
-            {
-                return NotFound($"Category with slug '{slug}' not found.");
-            }
-            var categoryDto = _mapper.Map<CategoryDto>(category);
-            return Ok(categoryDto);
-        } 
-
-
-        [AllowAnonymous]
-        [HttpGet("with-parent-and-attributes")]
-        public async Task<IActionResult> GetAllCategoriesWithParentAndAttributes()
-        {
-            var categories = await _categoryService.GetAllWithParentAndAttributes();
-            var categoryDtos = _mapper.Map<List<CategoryDto>>(categories);
-            return Ok(categoryDtos);
-        }
-
-        [AllowAnonymous]
-        [HttpGet("with-attributes-and-attribute-values")]
-        public async Task<IActionResult> GetAllCategoriesWithAttributesAndAttributeValues()
-        {
-            var categories = await _categoryService.GetAllWithAttributesAndAttributeValues();
-            var categoryDtos = _mapper.Map<List<CategoryDto>>(categories);
-            return Ok(categoryDtos);
-        }
-
-        [AllowAnonymous]
-        [HttpGet("{name}")]
-        public async Task<IActionResult> GetCategoryByName(string name)
-        {
-            var category = await _categoryService.GetCategoryByName(name);
-            if (category == null)
-            {
-                return NotFound($"Category with name '{name}' not found.");
-            }
-            return Ok(category);
-        }
-
-        [AllowAnonymous]
-        [HttpGet("parent/{parentId}")]
-        public async Task<IActionResult> GetCategoriesByParentId(Guid parentId)
-        {
-            var categories = await _categoryService.GetCategoriesByParentId(parentId);
-            return Ok(categories);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> CreateCategory([FromBody] AddCategoryDto addCategoryDto)
-        {
-            if (addCategoryDto == null)
-            {
-                return BadRequest("Category data is required.");
-            }
-
-            var category = _mapper.Map<Category>(addCategoryDto);
-            await _categoryService.CreateAsync(category);
-            return Ok("Category created successfully.");
-        }
-
-        [HttpPut]
-        public async Task<IActionResult> UpdateCategory([FromBody] UpdateCategoryDto updateCategoryDto)
-        {
-            if (updateCategoryDto == null)
-            {
-                return BadRequest("Category data is required.");
-            }
-
-            var category = _mapper.Map<Category>(updateCategoryDto);
-            await _categoryService.UpdateAsync(category);
-            return Ok("Category updated successfully.");
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCategory(Guid id)
-        {
-            await _categoryService.DeleteAsync(id);
-            return Ok("Category deleted successfully.");
-        }
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteCategory(Guid id)
+    {
+        await _categoryService.DeleteAsync(id);
+        return Ok("Category deleted successfully.");
     }
 }
