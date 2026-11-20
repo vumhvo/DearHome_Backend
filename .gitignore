@@ -52,7 +52,7 @@ _ReSharper*/
 local.settings.json
 
 # Entity Framework
-Migrations/
+# Migrations (DearHome_Backend/Data/Migrations) are committed on purpose.
 
 # Coverage Reports
 coverage/

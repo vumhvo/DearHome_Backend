@@ -16,7 +16,6 @@ using DearHome_Backend.DTOs.ReviewDtos;
 using DearHome_Backend.DTOs.UserDtos;
 using DearHome_Backend.DTOs.VariantAttributeDtos;
 using DearHome_Backend.DTOs.VariantDtos;
-using DearHome_Backend.Modals;
 using DearHome_Backend.Models;
 
 namespace DearHome_Backend.Helpers;
