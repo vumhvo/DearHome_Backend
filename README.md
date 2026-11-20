@@ -68,6 +68,8 @@ DearHome_Backend/
 ├── Repositories/    # Interfaces + Implementations truy cập dữ liệu
 ├── Services/        # Interfaces + Implementations nghiệp vụ
 └── Program.cs       # Khởi tạo ứng dụng
+tests/
+└── DearHome_Backend.Tests/  # Unit test xUnit (không cần DB hay mạng)
 ```
 
 ## Bắt đầu
@@ -204,6 +206,14 @@ dotnet run --launch-profile http
 ```
 
 API chạy tại `http://localhost:5226` (profile `https`: `https://localhost:7042`). Ở môi trường Development, **Swagger UI** mở ngay tại trang gốc `http://localhost:5226/`.
+
+### Kiểm thử
+
+```bash
+dotnet test
+```
+
+Bộ test xUnit trong [`tests/DearHome_Backend.Tests`](tests/DearHome_Backend.Tests) chạy hoàn toàn trong bộ nhớ (EF Core InMemory, `HttpMessageHandler` giả), không cần SQL Server, NATS hay mạng. GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) chạy restore, build `Release` và test cho mỗi push/pull request vào `main` và `refactor/**`.
 
 ## Danh sách API
 
